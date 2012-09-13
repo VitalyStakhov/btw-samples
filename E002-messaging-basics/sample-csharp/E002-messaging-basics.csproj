@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="Infrastructure.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="RemoveProductFromBasket.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ReadMe.md">
