@@ -203,6 +203,21 @@ namespace E002
                 Console.WriteLine("  {0}: {1}", total.Key, total.Value);
             }
 
+			var removeProductFromBasket = new RemoveProductFromBasket("shrimps");
+
+			Print (@"Applying RemoveProductFromBasket
+			");
+
+			ApplyMessage (basket, removeProductFromBasket);
+
+			Print (@"The final state of the basket:
+			");
+
+			foreach (var total in basket.GetProductTotals())
+			{
+				Console.WriteLine("  {0}: {1}", total.Key, total.Value);
+			}
+
             Print(@"
             And that is the basics of messaging!
 
@@ -275,11 +290,23 @@ namespace E002
                 Console.WriteLine("Shopping Basket said: I added {0} unit(s) of '{1}'", quantity, name);
             }
 
+			void RemoveProduct (string product)
+			{
+				_products.Remove (product);
+				Console.WriteLine ("Shopping Basket said: I removed {0}", product);
+			}
+
             public void When(AddProductToBasketMessage toBasketMessage)
             {
                 Console.Write("[Message Applied]: ");
                 AddProduct(toBasketMessage.Name, toBasketMessage.Quantity);
             }
+
+			public void When(RemoveProductFromBasket removeBasketMessage)
+			{
+				Console.Write("[Message Applied]: ");
+				RemoveProduct(removeBasketMessage.Product);
+			}
 
             public IDictionary<string, double> GetProductTotals()
             {
