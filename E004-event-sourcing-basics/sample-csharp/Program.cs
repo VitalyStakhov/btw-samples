@@ -154,6 +154,39 @@ namespace E004_event_sourcing_basics
                 }
             }
             
+			public void UnloadShipmentFromCargoBay(string employeeName) 
+			{
+				if(_ourListOfEmployeeNames.Contains(employeeName) == false)
+				{
+					Fail(":> employee {0} is not available", employeeName);
+					return;
+				}
+
+				DoRealWork("passing supplies");
+
+				RecordThat (new SuppliesUnloadedFromCargoBay());
+			}
+
+			public void ProduceCar(string employeeName, string carModel) 
+			{
+				if(_shipmentsWaitingToBeUnloaded.SelectMany(x => x).Where (x => x.Name == "wheels").Sum(x => x.Quantity) < 4)
+				{
+					Fail (":> cannot make the {0} car. Not enough wheels!", carModel);
+					return;
+				}
+
+				if(_ourListOfEmployeeNames.Contains (employeeName) == false)
+				{
+					Fail (":> employee {0} is not avaialble", employeeName);
+				}
+
+				DoRealWork("produce car");
+
+				RecordThat (new CarProduced
+				            {
+								Model = carModel
+							});
+			}
 
             void DoPaperWork(string workName)
             {
@@ -217,7 +250,37 @@ namespace E004_event_sourcing_basics
             {
                 
             }
+			void AnnounceInsideFactory(CarProduced e)
+			{
+				var wheelsRemoved = 0;
+				var wheelsParts = _shipmentsWaitingToBeUnloaded.SelectMany(x => x).Where (x => x.Name == "wheels");
+
+				foreach(var wheelsPart in wheelsParts)
+				{
+					var wheelsToRemove = wheelsPart.Quantity >= 4 - wheelsRemoved ? 4 - wheelsRemoved : wheelsPart.Quantity;
+					wheelsRemoved += wheelsToRemove;
+
+					wheelsPart.Quantity -= wheelsToRemove;
+
+					if(wheelsRemoved == 4)
+						break;
+				}
+			}
+			void AnnounceInsideFactory(SuppliesUnloadedFromCargoBay e)
+			{
+				_shipmentsWaitingToBeUnloaded.Clear ();
+			}
         }
+
+		public class CarProduced : IEvent
+		{
+			public string Model;
+
+			public override string ToString()
+			{
+				return string.Format ("car was produced: {0}", Model);
+			}
+		}
 
         public class EmployeeAssignedToFactory : IEvent
         {
@@ -228,6 +291,14 @@ namespace E004_event_sourcing_basics
                 return string.Format("new worker joins our forces: '{0}'", EmployeeName);
             }
         }
+
+		public class SuppliesUnloadedFromCargoBay : IEvent
+		{
+			public override string ToString ()
+			{
+				return string.Format ("supplies were unloaded from cargo bay");
+			}
+		}
 
         public class CurseWordUttered : IEvent
         {
@@ -281,11 +352,14 @@ namespace E004_event_sourcing_basics
 
             factory.TransferShipmentToCargoBay("model T spare parts", new[]
                 {
-                    new CarPart("wheels", 20),
+                    new CarPart("wheels", 7),
                     new CarPart("engine", 7),
                     new CarPart("bits and pieces", 2)
                 });
 
+			factory.ProduceCar ("yoda", "1 series");
+			factory.ProduceCar ("yoda", "3 series");
+			factory.UnloadShipmentFromCargoBay("yoda");
 
             Print("\r\nIt's the end of the day. Let's read our journal of events once more:\r\n");
             Print("\r\nWe should only see events below that were actually allowed to be recorded.\r\n");

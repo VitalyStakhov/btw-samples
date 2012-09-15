@@ -86,7 +86,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = ..\E002-messaging-basics\sample-csharp\E002-messaging-basics.csproj
+		StartupItem = ..\E004-event-sourcing-basics\sample-csharp\E004-event-sourcing-basics.csproj
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
