@@ -11,7 +11,7 @@ namespace E005_testing_use_cases
     // 3. allow loading this state variable from a journal
     // 4. add constructors and [Serializable] attribute to all events
     // this code is located inside "factory.cs"
-    
+
     // then we start writing short "specification" stories, using C# syntax
     // the specs below are written as runnable NUnit tests and/or you can see similar
     // test output displayed to the console in this sample (Ctrl+F5).
@@ -33,7 +33,7 @@ namespace E005_testing_use_cases
             // You will notice the use of the "Given, When, Then" structure inside specifications
 
             // 
-            Given = new IEvent[] { new EmployeeAssignedToFactory("yoda")  };
+            Given = new IEvent[] { new EmployeeAssignedToFactory("yoda") };
 
             // When (we do something with a method, like transfer a shipment to the cargo bay)
             When = f => f.TransferShipmentToCargoBay("some shipment", new CarPart[0]);
@@ -48,7 +48,7 @@ namespace E005_testing_use_cases
             // It is just left out, which does the same thing:  No Pre-Existing Events Yet!
             // So: Given NO EVENTS
 
-            When = f => f.TransferShipmentToCargoBay("some shipment", new[] {new CarPart("chassis", 1)});
+            When = f => f.TransferShipmentToCargoBay("some shipment", new[] { new CarPart("chassis", 1) });
             ThenException = ex => ex.Message.Contains("has to be somebody at factory");
         }
         [Test]
@@ -96,6 +96,68 @@ namespace E005_testing_use_cases
         }
     }
 
+    public sealed class when_unload_shipment_from_cargo_bay : factory_specs
+    {
+        [Test]
+        public void empty_factory()
+        {
+            When = f => f.UnloadShipmentFromCargoBay("john");
+            ThenException = ex => ex.Message.Contains("employee john is not available");
+        }
+
+        [Test]
+        public void employee_is_in_the_factory()
+        {
+            Given = new IEvent[]
+                        {
+                            new EmployeeAssignedToFactory("john"),
+                            new ShipmentTransferredToCargoBay("shipment", new CarPart("wheels", 10))
+                        };
+
+            When = f => f.UnloadShipmentFromCargoBay("john");
+            Then = new IEvent[]
+                       {
+                           new SuppliesUnloadedFromCargoBay()
+                       };
+        }
+    }
+
+    public sealed class when_produce_car : factory_specs
+    {
+        [Test]
+        public void empty_factory()
+        {
+            When = f => f.UnloadShipmentFromCargoBay("john");
+            ThenException = ex => ex.Message.Contains("employee john is not available");
+        }
+
+        [Test]
+        public void not_enough_car_parts()
+        {
+            Given = new IEvent[]
+                        {
+                            new EmployeeAssignedToFactory("john"), 
+                            new ShipmentTransferredToCargoBay("morning shipment", new CarPart("wheels", 2))
+                        };
+            When = f => f.ProduceCar("john", "1 series");
+            ThenException = ex => ex.Message.Contains("cannot make the 1 series car");
+        }
+
+        [Test]
+        public void employee_available_and_there_are_enough_car_parts()
+        {
+            Given = new IEvent[]
+                        {
+                            new EmployeeAssignedToFactory("john"), 
+                            new ShipmentTransferredToCargoBay("morning shipment", new CarPart("wheels", 4))
+                        };
+            When = f => f.ProduceCar("john", "1 series");
+            Then = new IEvent[]
+                       {
+                           new CarProduced { Model = "1 series"}
+                       };
+        }
+    }
 
     public class Program
     {
@@ -105,6 +167,8 @@ namespace E005_testing_use_cases
             // have it, we'll run it in a console as well
             RunSpecification(new when_assign_employee_to_factory());
             RunSpecification(new when_transfer_shipment_to_cargo_bay());
+            RunSpecification(new when_unload_shipment_from_cargo_bay());
+            RunSpecification(new when_produce_car());
         }
 
         static void RunSpecification(factory_specs specification)
@@ -112,7 +176,7 @@ namespace E005_testing_use_cases
             Console.WriteLine(new string('=', 80));
             var cases = specification.GetType()
                 .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            Print(ConsoleColor.DarkGreen, "Specification: {0}", specification.GetType().Name.Replace('_',' '));
+            Print(ConsoleColor.DarkGreen, "Specification: {0}", specification.GetType().Name.Replace('_', ' '));
             foreach (var methodInfo in cases)
             {
                 Console.WriteLine(new string('-', 80));
@@ -124,7 +188,7 @@ namespace E005_testing_use_cases
                     methodInfo.Invoke(specification, null);
                     Print(ConsoleColor.DarkGreen, "\r\nPASSED!");
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Print(ConsoleColor.DarkRed, "\r\nFAIL!");
                 }

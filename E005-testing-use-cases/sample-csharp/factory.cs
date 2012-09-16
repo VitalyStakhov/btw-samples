@@ -88,6 +88,39 @@ namespace E005_testing_use_cases
             }
         }
 
+        public void UnloadShipmentFromCargoBay(string employeeName)
+        {
+            if (_state.ListOfEmployeeNames.Contains(employeeName) == false)
+            {
+                Fail(":> employee {0} is not available", employeeName);
+                return;
+            }
+
+            DoRealWork("passing supplies");
+
+            RecordThat(new SuppliesUnloadedFromCargoBay());
+        }
+
+        public void ProduceCar(string employeeName, string carModel)
+        {
+            if (_state.ShipmentsWaitingToBeUnloaded.SelectMany(x => x).Where(x => x.Name == "wheels").Sum(x => x.Quantity) < 4)
+            {
+                Fail(":> cannot make the {0} car. Not enough wheels!", carModel);
+                return;
+            }
+
+            if (_state.ListOfEmployeeNames.Contains(employeeName) == false)
+            {
+                Fail(":> employee {0} is not avaialble", employeeName);
+            }
+
+            DoRealWork("produce car");
+
+            RecordThat(new CarProduced
+            {
+                Model = carModel
+            });
+        }
 
         void DoPaperWork(string workName)
         {
@@ -149,6 +182,26 @@ namespace E005_testing_use_cases
         {
 
         }
+        void AnnounceInsideFactory(SuppliesUnloadedFromCargoBay e)
+        {
+            ShipmentsWaitingToBeUnloaded.Clear();
+        }
+        void AnnounceInsideFactory(CarProduced e)
+        {
+            var wheelsRemoved = 0;
+            var wheelsParts = ShipmentsWaitingToBeUnloaded.SelectMany(x => x).Where(x => x.Name == "wheels");
+
+            foreach (var wheelsPart in wheelsParts)
+            {
+                var wheelsToRemove = wheelsPart.Quantity >= 4 - wheelsRemoved ? 4 - wheelsRemoved : wheelsPart.Quantity;
+                wheelsRemoved += wheelsToRemove;
+
+                wheelsPart.Quantity -= wheelsToRemove;
+
+                if (wheelsRemoved == 4)
+                    break;
+            }
+        }
 
         // This is the very important Mutate method that provides the only public
         // way for factory state to be modified.  Mutate ONLY ACCEPTS EVENTS that have happened.
@@ -203,6 +256,27 @@ namespace E005_testing_use_cases
             return string.Format("'{0}' was heard within the walls. It meant:\r\n    '{1}'", TheWord, Meaning);
         }
     }
+
+    [Serializable]
+    public class CarProduced : IEvent
+    {
+        public string Model;
+
+        public override string ToString()
+        {
+            return string.Format("car was produced: {0}", Model);
+        }
+    }
+
+    [Serializable]
+    public class SuppliesUnloadedFromCargoBay : IEvent
+    {
+        public override string ToString()
+        {
+            return string.Format("supplies were unloaded from cargo bay");
+        }
+    }
+
     [Serializable]
     public class ShipmentTransferredToCargoBay : IEvent
     {
